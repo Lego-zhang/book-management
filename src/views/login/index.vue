@@ -76,7 +76,7 @@ import { validUsername } from '@/utils/validate'
 
 export default {
   name: 'Login',
-  components: { },
+  components: {},
   data() {
     const validateUsername = (rule, value, callback) => {
       if (!validUsername(value)) {
@@ -117,6 +117,7 @@ export default {
           this.redirect = query.redirect
           this.otherQuery = this.getOtherQuery(query)
         }
+        console.log('query:', query, 'redirect', this.redirect, 'otherQuery', this.otherQuery)
       },
       immediate: true
     }
