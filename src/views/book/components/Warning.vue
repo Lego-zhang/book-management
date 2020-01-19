@@ -1,15 +1,13 @@
 <template>
-  <div>
-    <detail :is-edit="false" />
-  </div>
+  <aside class="">
+
+    sdfsfsfsfafafa
+  </aside>
 </template>
 
 <script>
-import Detail from './components/Detail.vue'
 export default {
-  components: {
-    Detail
-  },
+  components: {},
   props: {},
   data() {
     return {

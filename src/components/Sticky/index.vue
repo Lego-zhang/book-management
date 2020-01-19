@@ -58,6 +58,7 @@ export default {
       this.active = true
       this.width = this.width + 'px'
       this.isSticky = true
+      console.log(this.isSticky)
     },
     handleReset() {
       if (!this.active) {
