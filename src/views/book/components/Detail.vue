@@ -20,7 +20,12 @@
         <el-row>
           <warning />
           <el-col :span="24">
-            <ebook-upload />
+            <ebook-upload
+              :file-list="fileList"
+              :disabled="isEdit"
+              @onSuccess="onUploadSuccess"
+              @onRemove="onUploadRemove"
+            />
             <!-- 表单控件的具体样式 -->
           </el-col>
           <el-col :span="24">
@@ -53,10 +58,17 @@ export default {
       loading: false,
       postForm: {
         status: 'draft'
-      }
+      },
+      fileList: []
     }
   },
   methods: {
+    onUploadSuccess() {
+      console.log('onUploadSuccess')
+    },
+    onUploadRemove() {
+      console.log('onUploadRemove')
+    },
     showGuide() {
       console.log('show Guide ...')
     },
@@ -70,7 +82,7 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
-.detail-container{
+.detail-container {
   padding: 40px 50px 20px;
 }
 </style>
