@@ -94,6 +94,7 @@
                     <el-form-item
                       :label-width="labelWidth"
                       label="根文件："
+                      prop="rootFile"
                     >
                       <el-input
                         v-model="postForm.rootFile"
@@ -109,6 +110,7 @@
                     <el-form-item
                       :label-width="labelWidth"
                       label="文件路径："
+                      prop="filePath"
                     >
                       <el-input
                         v-model="postForm.filePath"
@@ -122,6 +124,7 @@
                     <el-form-item
                       :label-width="labelWidth"
                       label="解压路径："
+                      prop="unzipPath"
                     >
                       <el-input
                         v-model="postForm.unzipPath"
@@ -137,6 +140,7 @@
                     <el-form-item
                       :label-width="labelWidth"
                       label="封面路径："
+                      prop="coverPath"
                     >
                       <el-input
                         v-model="postForm.coverPath"
@@ -150,6 +154,7 @@
                     <el-form-item
                       :label-width="labelWidth"
                       label="文件名称："
+                      prop="originalName"
                     >
                       <el-input
                         v-model="postForm.originalName"
@@ -165,6 +170,7 @@
                     <el-form-item
                       label-width="60px"
                       label="封面："
+                      prop="cover"
                     >
                       <a
                         v-if="postForm.cover"
@@ -213,21 +219,22 @@ import Sticky from '../../../components/Sticky/index.vue'
 import Warning from './Warning'
 import EbookUpload from '../../../components/EookUppload/index'
 import MDinput from '../../../components/MDinput/index'
+import { createBook } from '../../../api/book'
 
-const defaultForm = {
-  title: '',
-  author: '',
-  publisher: '',
-  language: '',
-  rootFile: '',
-  cover: '',
-  originalName: '',
-  url: '',
-  fileName: '',
-  coverPath: '',
-  filePath: '',
-  unzipPath: ''
-}
+// const defaultForm = {
+//   title: '',
+//   author: '',
+//   publisher: '',
+//   language: '',
+//   rootFile: '',
+//   cover: '',
+//   originalName: '',
+//   url: '',
+//   fileName: '',
+//   coverPath: '',
+//   filePath: '',
+//   unzipPath: ''
+// }
 
 const fields = {
   title: '书名',
@@ -261,7 +268,6 @@ export default {
     return {
       loading: false,
       postForm: {
-        status: 'draft'
       },
       fileList: [],
       labelWidth: '120px',
@@ -289,6 +295,7 @@ export default {
       }
     },
     setData(data) {
+      console.log('setData', data)
       const {
         title,
         author,
@@ -325,9 +332,12 @@ export default {
       this.contentsTree = contentsTree
     },
     setDefault() {
-      this.postForm = Object.assign({}, defaultForm)
+      // this.postForm = Object.assign({}, defaultForm)
       this.contentsTree = []
+      this.fileList = []
+      this.$refs.postForm.resetFields()
     },
+    createBook() { },
     onUploadSuccess(data) {
       this.setData(data)
     },
@@ -337,21 +347,43 @@ export default {
     showGuide() {
     },
     submitForm() {
-      if (!this.loading) {
-        this.loading = true
-        this.$refs.postForm.validate((valid, fields) => {
-          console.log(valid, fields)
-          if (valid) {
-            // 111
-          } else {
-            const { message } = fields[Object.keys(fields)[0]][0]
-            this.$message({
-              message, type: 'error'
+      // if (!this.loading) {
+      this.loading = true
+      this.$refs.postForm.validate((valid, fields) => {
+        console.log(valid, fields)
+        if (valid) {
+          const book = Object.assign({}, this.postForm)
+          delete book.contents
+          delete book.contentsTree
+          if (!this.isEdit) {
+            createBook(book).then((response) => {
+              console.log(response)
+
+              const { msg } = response
+              this.$notify({
+                title: '操作成功',
+                message: msg,
+                type: 'success',
+                duration: 2000
+              })
+              this.loading = false
+              this.setDefault()
+            }).catch(() => {
+              this.loading = false
             })
-            this.loading = false
+          } else {
+            // updataBook(book)
           }
-        })
-      }
+          console.log(book)
+        } else {
+          const { message } = fields[Object.keys(fields)[0]][0]
+          this.$message({
+            message, type: 'error'
+          })
+          this.loading = false
+        }
+      })
+      // }
     }
   }
 }
