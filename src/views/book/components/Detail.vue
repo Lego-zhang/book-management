@@ -193,7 +193,7 @@
                       label="目录："
                     >
                       <div
-                        v-if="postForm.contents && postForm.contents.length > 0"
+                        v-if="contentsTree && contentsTree.length > 0"
                         class="contents-wrapper"
                       >
                         <el-tree
@@ -219,22 +219,7 @@ import Sticky from '../../../components/Sticky/index.vue'
 import Warning from './Warning'
 import EbookUpload from '../../../components/EookUppload/index'
 import MDinput from '../../../components/MDinput/index'
-import { createBook } from '../../../api/book'
-
-// const defaultForm = {
-//   title: '',
-//   author: '',
-//   publisher: '',
-//   language: '',
-//   rootFile: '',
-//   cover: '',
-//   originalName: '',
-//   url: '',
-//   fileName: '',
-//   coverPath: '',
-//   filePath: '',
-//   unzipPath: ''
-// }
+import { createBook, getBook, updateBook } from '../../../api/book'
 
 const fields = {
   title: '书名',
@@ -288,7 +273,18 @@ export default {
       }
     }
   },
+  created() {
+    if (this.isEdit) {
+      const fileName = this.$route.params.fileName
+      this.getBookData(fileName)
+    }
+  },
   methods: {
+    getBookData(fileName) {
+      getBook(fileName).then(response => {
+        this.setData(response.data)
+      })
+    },
     onContentClick(data) {
       if (data.text) {
         window.open(data.text)
@@ -330,9 +326,9 @@ export default {
         unzipPath
       }
       this.contentsTree = contentsTree
+      this.fileList = [{ name: originalName || fileName, url }]
     },
     setDefault() {
-      // this.postForm = Object.assign({}, defaultForm)
       this.contentsTree = []
       this.fileList = []
       this.$refs.postForm.resetFields()
@@ -347,43 +343,47 @@ export default {
     showGuide() {
     },
     submitForm() {
-      // if (!this.loading) {
-      this.loading = true
-      this.$refs.postForm.validate((valid, fields) => {
-        console.log(valid, fields)
-        if (valid) {
-          const book = Object.assign({}, this.postForm)
-          delete book.contents
-          delete book.contentsTree
-          if (!this.isEdit) {
-            createBook(book).then((response) => {
-              console.log(response)
+      const onSuccess = (response) => {
+        const { msg } = response
+        this.$notify({
+          title: '操作成功',
+          message: msg,
+          type: 'success',
+          duration: 2000
+        })
+        this.loading = false
+      }
 
-              const { msg } = response
-              this.$notify({
-                title: '操作成功',
-                message: msg,
-                type: 'success',
-                duration: 2000
+      if (!this.loading) {
+        this.loading = true
+        this.$refs.postForm.validate((valid, fields) => {
+          console.log(valid, fields)
+          if (valid) {
+            const book = Object.assign({}, this.postForm)
+            delete book.contentsTree
+            if (!this.isEdit) {
+              createBook(book).then((response) => {
+                onSuccess(response)
+                this.setDefault()
+              }).catch(() => {
+                this.loading = false
               })
-              this.loading = false
-              this.setDefault()
-            }).catch(() => {
-              this.loading = false
-            })
+            } else {
+              updateBook(book).then(response => {
+                onSuccess(response)
+              }).catch(() => {
+                this.loading = false
+              })
+            }
           } else {
-            // updataBook(book)
+            const { message } = fields[Object.keys(fields)[0]][0]
+            this.$message({
+              message, type: 'error'
+            })
+            this.loading = false
           }
-          console.log(book)
-        } else {
-          const { message } = fields[Object.keys(fields)[0]][0]
-          this.$message({
-            message, type: 'error'
-          })
-          this.loading = false
-        }
-      })
-      // }
+        })
+      }
     }
   }
 }

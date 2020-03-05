@@ -99,7 +99,7 @@ export const asyncRoutes = [
       },
       {
         name: 'bookEdit',
-        path: '/book/edit',
+        path: '/book/edit/:fileName',
         component: () => import('@/views/book/edit'),
         meta: {
           title: '编辑图书',
