@@ -200,7 +200,13 @@
       </el-table-column>
 
     </el-table>
-    <pagination :total="0" />
+    <pagination
+      v-show="total >0"
+      :total="total"
+      :page.sync="listQuery.page"
+      :limit.sync="listQuery.pageSize"
+      @pagination="getList"
+    />
   </div>
 </template>
 
@@ -225,7 +231,8 @@ export default {
       },
       showCover: false,
       categoryList: [],
-      list: []
+      list: [],
+      total: 0
     }
   },
   computed: {
@@ -274,8 +281,9 @@ export default {
     getList() {
       this.listLoading = true
       listBook(this.listQuery).then(response => {
-        const { list } = response.data
+        const { list, count } = response.data
         this.list = list
+        this.total = count
         this.listLoading = false
         this.list.forEach(book => {
           book.titleWrapper = this.wrapperKeyword('title', book.title)
