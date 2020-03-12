@@ -32,7 +32,7 @@
           v-for="item in categoryList"
           :key="item.value"
           :label=" item.label+'('+item.num+')'"
-          :value="item.value"
+          :value="item.label"
         />
       </el-select>
       <el-button
@@ -72,6 +72,7 @@
       fit
       highlight-current-row
       style="width:100%"
+      :default-sort="defaultSort"
       @sort-change="sortChange"
     >
       <el-table-column
@@ -154,35 +155,55 @@
         prop="filePath"
         align="center"
         width="100"
-      />
+      >
+        <template slot-scope="{ row : { filePath } }">
+          <span>{{ filePath | valueFilter }}</span>
+        </template>
+      </el-table-column>
 
       <el-table-column
         label="封面路径"
         prop="coverPath"
         align="center"
         width="100"
-      />
+      >
+        <template slot-scope="{ row : { coverPath } }">
+          <span>{{ coverPath | valueFilter }}</span>
+        </template>
+      </el-table-column>
 
       <el-table-column
         label="解压路径"
         prop="unzipPath"
         align="center"
         width="100"
-      />
+      >
+        <template slot-scope="{ row : { unzipPath } }">
+          <span>{{ unzipPath | valueFilter }}</span>
+        </template>
+      </el-table-column>
 
       <el-table-column
         label="上传人"
         prop="createUser"
         align="center"
         width="100"
-      />
+      >
+        <template slot-scope="{ row : { createUser } }">
+          <span>{{ createUser | valueFilter }}</span>
+        </template>
+      </el-table-column>
 
       <el-table-column
         label="上传时间"
         prop="createDt"
         align="center"
         width="100"
-      />
+      >
+        <template slot-scope="{ row : { createDt } }">
+          <span>{{ createDt | timeFilter }}</span>
+        </template>
+      </el-table-column>
 
       <el-table-column
         label="操作"
@@ -196,6 +217,12 @@
             icon="el-icon-edit"
             @click="handleUpdate(row)"
           />
+          <el-button
+            type="text"
+            icon="el-icon-delete"
+            style="color:#f56c6c"
+            @click="handleDelete(row)"
+          />
         </template>
       </el-table-column>
 
@@ -205,7 +232,7 @@
       :total="total"
       :page.sync="listQuery.page"
       :limit.sync="listQuery.pageSize"
-      @pagination="getList"
+      @pagination="refresh"
     />
   </div>
 </template>
@@ -213,7 +240,8 @@
 <script>
 import Pagination from '../../components/Pagination/index'
 import waves from '../../directive/waves/waves'
-import { getCategory, listBook } from '../../api/book'
+import { getCategory, listBook, deleteBook } from '../../api/book'
+import { parseTime } from '../../utils'
 // import func from '../../../vue-temp/vue-editor-bridge'
 export default {
   components: {
@@ -221,6 +249,14 @@ export default {
   },
   directives: {
     waves
+  },
+  filters: {
+    valueFilter(value) {
+      return value || '无'
+    },
+    timeFilter(time) {
+      return time ? parseTime(time, '{y}-{m}-{d} {h}:{i}') : '无'
+    }
   },
   props: {},
   data() {
@@ -232,12 +268,11 @@ export default {
       showCover: false,
       categoryList: [],
       list: [],
-      total: 0
+      total: 0,
+      defaultSort: {}
     }
   },
-  computed: {
-
-  },
+  computed: {},
   watch: {},
   created() {
     this.parseQuery()
@@ -246,17 +281,44 @@ export default {
     this.getList()
     this.getCategoryList()
   },
+  beforeRouteUpdate(to, from, next) {
+    console.log('to', to)
+    if (to.path === from.path) {
+      const newQuery = Object.assign({}, to.query)
+      const oldQuery = Object.assign({}, from.query)
+
+      if (JSON.stringify(newQuery) !== JSON.stringify(oldQuery)) {
+        this.getList()
+      }
+    }
+    next()
+  },
   methods: {
     parseQuery() {
+      const query = Object.assign({}, this.$route.query)
+      let sort = '+id'
       const listQuery = {
         page: 1,
         pageSize: 20,
-        sort: '+id'
+        sort
       }
-      this.listQuery = { ...listQuery, ...this.listQuery }
+      if (query) {
+        query.page && (query.page = +query.page)
+        query.pageSize && (query.pageSize = +query.pageSize)
+        query.sort && (sort = query.sort)
+      }
+      const sortSymbol = sort[0]
+      const sortColumn = sort.slice(1, sort.length)
+
+      console.log(sortSymbol, sortColumn)
+      this.defaultSort = {
+        prop: sortColumn,
+        order: sortSymbol === '+' ? 'ascending' : 'descending'
+      }
+
+      this.listQuery = { ...listQuery, ...query }
     },
     sortChange(data) {
-      console.log('sortChange', data)
       const { prop, order } = data
       this.sortBy(prop, order)
     },
@@ -291,15 +353,38 @@ export default {
         })
       })
     },
+    refresh() {
+      this.$router.push({
+        path: '/book/list',
+        query: this.listQuery
+      })
+    },
     handleFilter() {
-      console.log('handleFilter', this.listQuery)
-      this.getList()
+      this.listQuery.page = 1
+      this.refresh()
     },
     handleCreate() {
       this.$router.push('/book/create')
     },
     handleUpdate(row) {
       this.$router.push(`/book/edit/${row.fileName}`)
+    },
+    handleDelete(row) {
+      this.$confirm('此操作将永久删除该电子书，是否继续？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        deleteBook(row.fileName).then(response => {
+          this.$notify({
+            title: '成功',
+            message: response.msg || '删除成功',
+            type: 'success',
+            duration: 2000
+          })
+          this.handleFilter()
+        })
+      })
     },
     changeShowCover(value) {
       this.showCover = value
